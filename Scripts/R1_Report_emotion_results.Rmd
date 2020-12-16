@@ -1,37 +1,46 @@
-# DETECT EMOTIONS
+---
+title: "Text mining emotion statements"
+output:
+  html_document:
+    df_print: paged
+---
+This script uses the package sentimentr to assess the emotional content
+in sentences about the prospects related to a rival candidate would win
+the presidential election
 
-# This script uses the package sentimentr to assess the emotional content
-# in sentences about the prospects related to a rival candidate would win
-# the presidential election
-# 
-# It returns a dataframe where each row represents an emotion detected
-# within their response. It displays the total number of words on their 
-# submission, and the number of emotion phrases detected in it. 
-# 
-# Additionally, it provides an emotional rate per sentence, which is then
-# averaged in the whole submission. This emotional rate is based in a basic
-# dictionary lookup to find the emotion words. This rate ranges from 0 to 1.
-# The dictionary used is a filtered version of the NRC emotion lexicon from
-# Mohammad & Turney (2010).
+It returns a dataframe where each row represents an emotion detected
+within their response. It displays the total number of words on their
+submission, and the number of emotion phrases detected in it.
 
-# Load necessary packages -------------------------------------------------
+Additionally, it provides an emotional rate per sentence, which is then
+averaged in the whole submission. This emotional rate is based in a basic
+dictionary lookup to find the emotion words. This rate ranges from 0 to 1.
+The dictionary used is a filtered version of the NRC emotion lexicon from
+Mohammad & Turney (2010).
+
+```{r setup}
 require(tidyverse)
 require(ggplot2)
 require(sentimentr)
 
-# Define base directories -------------------------------------------------
 folder_root <- dirname(dirname(rstudioapi::getActiveDocumentContext()$path))
 folder_data <- file.path(folder_root, "Data")
 
-# Load base data ----------------------------------------------------------
+```
+
+Here we load the base data
+```{r}
+# Load base data
 raw_data <- read.csv(file = file.path(folder_data, "emotion_prime_scoring.csv")) %>% 
   select(1:3) %>% 
   rename("subject" = 1, "candidate" = 2, "response" = 3) %>% 
   na.omit() %>% 
   filter(response != "")
 
+```
 
-# Split sentences and perform emotional detection -------------------------
+Now we divide the statements in sentences, and perform the emotion detection for each subject
+```{r}
 emotional_data <- raw_data %>%
   get_sentences() %>% 
   emotion_by(response, by = c("subject", "candidate")) %>% 
@@ -39,7 +48,12 @@ emotional_data <- raw_data %>%
   mutate(candidate = as.factor(candidate),
          emotion_type = as.factor(emotion_type))
 
+emotional_data
 
+```
+
+Now we create summaries per candidate
+```{r}
 candidate_data <- emotional_data %>% 
   group_by(candidate) %>% 
   mutate(members = length(unique(subject))) %>% 
@@ -50,8 +64,14 @@ candidate_data <- emotional_data %>%
   unique() %>% 
   mutate(emotion_type = fct_reorder(emotion_type, proportion)) %>% 
   filter(!str_detect(emotion_type, "negated"))
+
+candidate_data
   
-# Plot the data -----------------------------------------------------------
+
+```
+
+Quick visualization
+```{r fig.width=10}
 ggplot(data = candidate_data) +
   geom_col(aes(x = emotion_type,
                y = proportion,
@@ -64,5 +84,29 @@ ggplot(data = candidate_data) +
   scale_y_continuous(name = "Proportion of participants expressing emotion") +
   
   scale_fill_brewer(palette = "Dark2")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
